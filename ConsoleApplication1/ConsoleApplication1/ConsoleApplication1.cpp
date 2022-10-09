@@ -12,7 +12,7 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
             if (device->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE) {
                 DEV_BROADCAST_DEVICEINTERFACE_A* deviceInterface = (DEV_BROADCAST_DEVICEINTERFACE_A*)device;
                 char* deviceName = deviceInterface->dbcc_name;
-				char* index = strrchr(deviceName, '#');
+				char* index = strrchr((char *)deviceName, '#');
 				if(index != NULL) {
 					*index = 0;
 				}
