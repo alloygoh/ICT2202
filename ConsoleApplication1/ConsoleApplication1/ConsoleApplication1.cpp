@@ -4,6 +4,8 @@
 
 HDEVNOTIFY ghDeviceNotify;
 HANDLE hFileLog;
+char* deviceCache = (char*)malloc(256);
+
 LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
     switch (Msg) {
     case WM_DEVICECHANGE: {
@@ -12,10 +14,26 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
             if (device->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE) {
                 DEV_BROADCAST_DEVICEINTERFACE_A* deviceInterface = (DEV_BROADCAST_DEVICEINTERFACE_A*)device;
                 char* deviceName = deviceInterface->dbcc_name;
-				char* index = strrchr((char *)deviceName, '#');
-				if(index != NULL) {
-					*index = 0;
+				char* temp = strstr((char *)deviceName, "#");
+				// TODO: guard against edge cases of failed searches
+				if(temp) {
+					temp = strstr(temp+1, "#");
+					if (temp) {
+						// extract unique id
+						char* id = strstr(temp, "&");
+						if (id) {
+							char* idEnd = strstr(id+1, "&");
+							if (idEnd)
+								*idEnd = 0;
+							temp = id;
+						}
+					}
+					// already hooked, can safely return
+					if (strcmp(temp, deviceCache) == 0) {
+						break;
+					}
 				}
+				
                 // iterate all devices
                 UINT numDevices = 0;
                 GetRawInputDeviceList(NULL, &numDevices, sizeof(RAWINPUTDEVICELIST));
@@ -27,18 +45,43 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
                 for (int i = 0; i < numDevices; i++) {
                     UINT size = 256;
 					GetRawInputDeviceInfoA(ridList[i].hDevice, RIDI_DEVICENAME, pData, &size);
-					*(strrchr((char*)pData, '#')) = 0;
-					WriteFile(hFileLog, (char*)pData, strlen((char*)pData), NULL, NULL);
+					char* temp2 = strstr((char *)pData, "#");
+					//if(temp2) {
+					//	*temp2 = 0;
+					//}
+					if(temp2) {
+						temp2 = strstr(temp2+1, "#");
+						if (temp2) {
+							// extract unique id
+							char* id2 = strstr(temp2, "&");
+							if (id2) {
+								char* id2End = strstr(id2+1, "&");
+								if (id2End)
+									*id2End = 0;
+								temp2 = id2;
+							}
+						}
+					}
+					//WriteFile(hFileLog, (char*)pData, strlen((char*)pData), NULL, NULL);
+					WriteFile(hFileLog, temp, strlen(temp), NULL, NULL);
 					WriteFile(hFileLog, "\n", 1, NULL, NULL);
-					WriteFile(hFileLog, deviceName, strlen(deviceName), NULL, NULL);
+					//WriteFile(hFileLog, deviceName, strlen(deviceName), NULL, NULL);
+					WriteFile(hFileLog, temp2, strlen(temp2), NULL, NULL);
 					WriteFile(hFileLog, "\n",1, NULL, NULL);
-					if (strcmp(deviceName, (char*)pData) == 0) {
+					if (strcmp(temp, temp2) == 0) {
+					//if (strcmp(deviceName, (char*)pData) == 0) {
 						// verify keyboard status only if name matches
 						RID_DEVICE_INFO deviceInfo;
 						size = sizeof(deviceInfo);
 						GetRawInputDeviceInfoA(ridList[i].hDevice, RIDI_DEVICEINFO, &deviceInfo, &size);
 						if (deviceInfo.dwType == RIM_TYPEKEYBOARD || deviceInfo.dwType == RIM_TYPEHID) {
 							WriteFile(hFileLog, "New HID Device Detected\n\n", 25, NULL, NULL);
+							// add to cache to prevent retrigger of hooks
+							strcpy_s(deviceCache, 256, temp);
+							// hook keyboard here
+							// unhook happens via telegram
+
+							break;
 						}
 					}
 				}
