@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <stdio.h>
 #include <dbt.h>
+#include "header.h"
 
 HDEVNOTIFY ghDeviceNotify;
 HANDLE hFileLog;
@@ -151,6 +152,12 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 }
 
 INT WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, INT nShowCmd) {
+	calculateTiming(1);
+	calculateTiming(1);
+	calculateTiming(1);
+	calculateTiming(1);
+	calculateTiming(1);
+	calculateTiming(1);
 	WNDCLASSEXA WndClass;
 	RtlZeroMemory(&WndClass, sizeof(WndClass));
 	WndClass.cbSize = sizeof(WNDCLASSEXA);
