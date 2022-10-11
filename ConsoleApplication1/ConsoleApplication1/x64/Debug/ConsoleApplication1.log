@@ -1,7 +1,0 @@
-﻿  ConsoleApplication1.cpp
-C:\Users\alloy\source\repos\ICT2202\ConsoleApplication1\ConsoleApplication1\ConsoleApplication1.cpp(45,35): warning C4018: '<': signed/unsigned mismatch
-C:\Users\alloy\source\repos\ICT2202\ConsoleApplication1\ConsoleApplication1\ConsoleApplication1.cpp(66,56): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
-C:\Users\alloy\source\repos\ICT2202\ConsoleApplication1\ConsoleApplication1\ConsoleApplication1.cpp(69,58): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
-C:\Users\alloy\source\repos\ICT2202\ConsoleApplication1\ConsoleApplication1\ConsoleApplication1.cpp(40,22): warning C4101: 'cNum': unreferenced local variable
-C:\Users\alloy\source\repos\ICT2202\ConsoleApplication1\ConsoleApplication1\ConsoleApplication1.cpp(164,68): warning C4312: 'type cast': conversion from 'errno_t' to 'LPCSTR' of greater size
-  ConsoleApplication1.vcxproj -> C:\Users\alloy\source\repos\ICT2202\ConsoleApplication1\x64\Debug\ConsoleApplication1.exe
