@@ -1,15 +1,33 @@
-#include "header.h"
+/*
+ * [KEYBOARD HOOK]
+ * Recommended usage is to start the keyboard hook for however long is a separate thread, then call releaseHook from the main thread when the keyboard inputs are sanitised. See example below:
+
+ * int main() {
+ *    std::thread t1(keyboardHook);
+ *    t1.detach();
+ *    Sleep(10000);
+ *    releaseHook();
+ *    replayStoredKeystrokes();
+
+ *    return 0;
+ * }
+ */
+
+#include "keyboard.h"
 
 HHOOK ghHook;
 KBDLLHOOKSTRUCT kbdStruct;
-std::vector<INPUT> inputs;
+std::vector<INPUT> vInputs;
+
+// flag to toggle whether input is let through
+bool ALLOW_INPUT = false;
 
 bool setHook(){
 
     // set the keyboard hook for all processes on the computer
     // runs the hookCallback function when hooked is triggered
     if (!(ghHook = SetWindowsHookExW(WH_KEYBOARD_LL, hookCallback, NULL, 0))){
-        wprintf(L"%s: %d\n", "Hooked failed to install with error code", GetLastError());
+        wprintf(L"%s: %d\n", L"Hooked failed to install with error code", GetLastError());
         return 1;
     }
     else {
@@ -34,23 +52,47 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
         return CallNextHookEx(ghHook, nCode, wParam, lParam);
     }
 
+    // Retrieve name of process that the keystroke is meant for
+
+    HWND hWnd = GetForegroundWindow();
+    DWORD dwProcessId;
+    GetWindowThreadProcessId(hWnd, &dwProcessId);
+    HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwProcessId);
+    WCHAR lpBaseName[MAX_PATH];
+    GetModuleBaseNameW(hProc, NULL, lpBaseName, MAX_PATH);
+
     kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
     int vkCode = kbdStruct.vkCode;
 
-    INPUT input;
-    input.type = INPUT_KEYBOARD;
-    input.ki.wVk = kbdStruct.vkCode;
+    vInputs.push_back(INPUT());
+    int i = vInputs.size() - 1;
 
-    printf("%d\n", wParam);
-    if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP || WM_IME_KEYUP)
-        input.ki.dwFlags = KEYEVENTF_KEYUP;
+    vInputs[i].type = INPUT_KEYBOARD;
+    vInputs[i].ki.wVk = vkCode;
 
-    inputs.push_back(input);
+    if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
+        vInputs[i].ki.dwFlags = KEYEVENTF_KEYUP;
+    else
+        vInputs[i].ki.dwFlags = 0;
 
-	return 0;
+    // Logging
+    wprintf(L"Keystroke for: %s\nVirtual Keycode: %d\n", lpBaseName, vkCode);
+
+	return (ALLOW_INPUT ? 0 : -1);
 }
 
-void start() {
+void replayStoredKeystrokes() {
+    UINT cInputs = vInputs.size();
+    PINPUT pInputs = (INPUT *)malloc(sizeof(INPUT) * cInputs);
+    for (int i = 0; i < cInputs; ++i) {
+        pInputs[i] = vInputs[i];
+    }
+
+    int res = SendInput(cInputs, pInputs, sizeof(INPUT));
+    vInputs.clear();
+}
+
+void keyboardHook() {
 
     setHook();
 	MSG msg;
@@ -58,23 +100,4 @@ void start() {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
-}
-
-int main() {
-    std::thread keyboardMonitor(start);
-    keyboardMonitor.detach();
-    Sleep(3000);
-    releaseHook();
-
-    UINT cInputs = inputs.size();
-    LPINPUT pInputs = (LPINPUT)malloc(sizeof(INPUT) * cInputs);
-    int i = 0;
-    for (INPUT input : inputs) {
-        printf("%d\n", input.ki.wVk);
-        pInputs[i] = input;
-    }
-
-    int res = SendInput(cInputs, pInputs, sizeof(INPUT));
-    printf("%d\n", res);
-    return 0;
 }

