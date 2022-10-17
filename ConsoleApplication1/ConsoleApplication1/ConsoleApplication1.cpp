@@ -4,9 +4,12 @@
 #include "stats.h"
 #include "keyboard.h"
 
+
 HDEVNOTIFY ghDeviceNotify;
 HANDLE hFileLog;
 char* deviceCache = (char*)malloc(256);
+char* knownWhitelist = NULL;
+bool enrollment = false;
 
 LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 	switch (Msg) {
@@ -34,6 +37,9 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 					if (strcmp(temp, deviceCache) == 0) {
 						break;
 					}
+					// in whitelist, can safely return
+					if (strstr(knownWhitelist, temp))
+						break;
 				}
 
 				// iterate all devices
@@ -78,6 +84,41 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 						GetRawInputDeviceInfoA(ridList[i].hDevice, RIDI_DEVICEINFO, &deviceInfo, &size);
 						if (deviceInfo.dwType == RIM_TYPEKEYBOARD || deviceInfo.dwType == RIM_TYPEHID) {
 							WriteFile(hFileLog, "New HID Device Detected\n\n", 25, NULL, NULL);
+							// can call ReadFile over and over again in enrollment mode as speed not a concern
+							if (enrollment) {
+								if (strstr(knownWhitelist, temp)) {
+									MessageBoxA(NULL, "Device already whitelisted", "Notice", MB_OK);
+									strcpy_s(deviceCache,256, temp);
+									break;
+								}
+								// write to configuration file
+								char* path;
+								size_t pathLen = 0;
+								_dupenv_s(&path, &pathLen, "APPDATA");
+								std::string configPath(path);
+								configPath = configPath + "\\ICT2202";
+								// ensure directory exists
+								CreateDirectoryA(configPath.c_str(), NULL);
+								configPath = configPath + "\\config";
+								HANDLE hFileEnroll = CreateFileA(configPath.c_str(),FILE_APPEND_DATA, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+								DWORD dwWritten;
+								WriteFile(hFileEnroll, temp, strlen(temp), &dwWritten, 0);
+								WriteFile(hFileEnroll, "\n", 1, NULL, NULL);
+								CloseHandle(hFileEnroll);
+								MessageBoxA(NULL, "Successfully Enrolled HID!", "Success", MB_OK);
+								// refresh whitelist to allow for constant additions
+								hFileEnroll = CreateFileA(configPath.c_str(),GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+								DWORD dwBytesRead = 0;
+								LARGE_INTEGER configSize;
+								GetFileSizeEx(hFileEnroll, &configSize);
+								knownWhitelist = (char*)realloc(knownWhitelist, configSize.QuadPart);
+								if (!knownWhitelist || !ReadFile(hFileEnroll, knownWhitelist, configSize.QuadPart, &dwBytesRead, NULL)) {
+									MessageBoxA(NULL, "Failed to read config file!", "ICT2202 Error log", MB_OK);
+									CloseHandle(hFileEnroll);
+									ExitProcess(-1);
+								}
+								break;
+							}
 							// add to cache to prevent retrigger of hooks
 							strcpy_s(deviceCache, 256, temp);
 							// hook keyboard here
@@ -157,6 +198,35 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 }
 
 INT WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, INT nShowCmd) {
+	// enrollment mode
+	if (wcscmp(lpCmdLine, L"enroll") == 0) {
+		enrollment = true;
+	}
+	// populate whitelist
+	char* path;
+	size_t pathLen = 0;
+	_dupenv_s(&path, &pathLen, "APPDATA");
+	std::string configPath(path);
+	configPath = configPath + "\\ICT2202";
+	// ensure directory exists
+	CreateDirectoryA(configPath.c_str(), NULL);
+	configPath = configPath + "\\config";
+	HANDLE hFileConfig = CreateFileA(configPath.c_str(),GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFileConfig != INVALID_HANDLE_VALUE) {
+		LARGE_INTEGER configSize;
+		GetFileSizeEx(hFileConfig, &configSize);
+		knownWhitelist = (char*)calloc(configSize.QuadPart + 1,sizeof(char));
+		DWORD dwBytesRead = 0;
+		if (!ReadFile(hFileConfig, knownWhitelist, configSize.QuadPart, &dwBytesRead, NULL)) {
+			MessageBoxA(NULL, "Failed to read config file!", "ICT2202 Error log", MB_OK);
+			CloseHandle(hFileConfig);
+			ExitProcess(-1);
+		}
+	}
+	else {
+		knownWhitelist = (char*)calloc(1, 1);
+	}	
+	CloseHandle(hFileConfig);
 	WNDCLASSEXA WndClass;
 	RtlZeroMemory(&WndClass, sizeof(WndClass));
 	WndClass.cbSize = sizeof(WNDCLASSEXA);
