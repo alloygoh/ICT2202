@@ -1,7 +1,7 @@
 #include <Windows.h>
 #include <stdio.h>
 #include <dbt.h>
-#include "header.h"
+#include "stats.h"
 #include "keyboard.h"
 
 HDEVNOTIFY ghDeviceNotify;

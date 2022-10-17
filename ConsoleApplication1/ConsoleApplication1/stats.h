@@ -1,4 +1,7 @@
-#pragma once
+#ifndef STATS_H
+#define STATS_H
+
+#include <windows.h>
 #include <iostream>
 #include <vector>
 #include <numeric>
@@ -6,4 +9,6 @@
 
 double calculateMean(std::vector<int> v);
 double calculateStandardDeviation(std::vector<int> v, double mean);
-bool calculateTiming(int startTime);
+bool calculateTiming(DWORD now);
+
+#endif

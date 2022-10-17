@@ -14,13 +14,14 @@
  */
 
 #include "keyboard.h"
+#include "stats.h"
 
 HHOOK ghHook;
 KBDLLHOOKSTRUCT kbdStruct;
 std::vector<INPUT> vInputs;
 
 // flag to toggle whether input is let through
-bool ALLOW_INPUT = false;
+bool ALLOW_INPUT = true;
 
 bool setHook(){
 
@@ -78,6 +79,11 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
     // Logging
     wprintf(L"Keystroke for: %s\nVirtual Keycode: %d\n", lpBaseName, vkCode);
 
+    if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP){
+        DWORD now = kbdStruct.time;
+		ALLOW_INPUT = calculateTiming(now);
+    }
+
 	return (ALLOW_INPUT ? 0 : -1);
 }
 
@@ -93,9 +99,8 @@ void replayStoredKeystrokes() {
 }
 
 void keyboardHook() {
-
     setHook();
-	MSG msg;
+    MSG msg;
     while (GetMessage(&msg, NULL, 0, 0) != 0) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);

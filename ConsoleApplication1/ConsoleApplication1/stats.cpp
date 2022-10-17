@@ -1,8 +1,8 @@
-#include "header.h"
+#include "stats.h"
 
-int THRESHHOLD = 50;
-int WINDOW_SIZE = 3;
-int prevTime = 0;
+int THRESHHOLD = 20;
+int WINDOW_SIZE = 10;
+time_t prevTime = 0;
 std::vector<int> times;
 
 double calculateMean(std::vector<int> v){
@@ -15,12 +15,15 @@ double calculateStandardDeviation(std::vector<int> v, double mean) {
 	return std::sqrt(sq_sum / v.size() - mean * mean);
 }
 
-bool calculateTiming(int startTime) {
-	int timeDiff = startTime - prevTime;
-	prevTime = startTime;
-	std::cout << "TimeDiff is " << timeDiff << std::endl;
+bool calculateTiming(DWORD now) {
+	DWORD timeDiff = now - prevTime;
 
-	times.push_back(timeDiff);
+	if(prevTime > 0){
+		times.push_back(timeDiff);
+	}	
+
+	prevTime = now;
+
 	if (times.size() <= 1) {
 		return true;
 	}
@@ -32,10 +35,8 @@ bool calculateTiming(int startTime) {
 
 	double stdev = calculateStandardDeviation(times, mean);
 
-	double cv = stdev / mean * 100;
-	std::cout << "Mean is " << mean << std::endl;
+	// double cv = stdev / mean * 100;
 	std::cout << "stdev is " << stdev << std::endl;
-	std::cout << "CV is " << cv << std::endl;
 
-	return cv > THRESHHOLD;
+	return stdev > THRESHHOLD;
 }
