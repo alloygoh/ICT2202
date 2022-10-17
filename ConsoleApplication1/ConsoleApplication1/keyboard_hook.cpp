@@ -14,90 +14,95 @@
  */
 
 #include "keyboard.h"
+#include "stats.h"
 
 HHOOK ghHook;
 KBDLLHOOKSTRUCT kbdStruct;
 std::vector<INPUT> vInputs;
 
 // flag to toggle whether input is let through
-bool ALLOW_INPUT = false;
+bool ALLOW_INPUT = true;
 
-bool setHook(){
+bool setHook() {
 
-    // set the keyboard hook for all processes on the computer
-    // runs the hookCallback function when hooked is triggered
-    if (!(ghHook = SetWindowsHookExW(WH_KEYBOARD_LL, hookCallback, NULL, 0))){
-        wprintf(L"%s: %d\n", L"Hooked failed to install with error code", GetLastError());
-        return 1;
-    }
-    else {
-        wprintf(L"Hook successfully installed!\n");
-    }
+	// set the keyboard hook for all processes on the computer
+	// runs the hookCallback function when hooked is triggered
+	if (!(ghHook = SetWindowsHookExW(WH_KEYBOARD_LL, hookCallback, NULL, 0))) {
+		wprintf(L"%s: %d\n", L"Hooked failed to install with error code", GetLastError());
+		return 1;
+	}
+	else {
+		wprintf(L"Hook successfully installed!\n");
+	}
 
-    return 0;
+	return 0;
 }
 
-bool releaseHook(){
+bool releaseHook() {
 
-    return UnhookWindowsHookEx(ghHook);
+	return UnhookWindowsHookEx(ghHook);
 }
 
 LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
-    // function handler for all keyboard strokes
+	// function handler for all keyboard strokes
 
-    // If nCode is less than zero, the hook procedure must pass the
-    // message to the CallNextHookEx function without further processing
-    // and should return the value returned by CallNextHookEx.
-    if (nCode < 0) {
-        return CallNextHookEx(ghHook, nCode, wParam, lParam);
-    }
+	// If nCode is less than zero, the hook procedure must pass the
+	// message to the CallNextHookEx function without further processing
+	// and should return the value returned by CallNextHookEx.
+	if (nCode < 0) {
+		return CallNextHookEx(ghHook, nCode, wParam, lParam);
+	}
 
-    // Retrieve name of process that the keystroke is meant for
+	// Retrieve name of process that the keystroke is meant for
 
-    HWND hWnd = GetForegroundWindow();
-    DWORD dwProcessId;
-    GetWindowThreadProcessId(hWnd, &dwProcessId);
-    HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwProcessId);
-    WCHAR lpBaseName[MAX_PATH];
-    GetModuleBaseNameW(hProc, NULL, lpBaseName, MAX_PATH);
+	HWND hWnd = GetForegroundWindow();
+	DWORD dwProcessId;
+	GetWindowThreadProcessId(hWnd, &dwProcessId);
+	HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwProcessId);
+	WCHAR lpBaseName[MAX_PATH];
+	GetModuleBaseNameW(hProc, NULL, lpBaseName, MAX_PATH);
 
-    kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
-    int vkCode = kbdStruct.vkCode;
+	kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
+	int vkCode = kbdStruct.vkCode;
 
-    vInputs.push_back(INPUT());
-    int i = vInputs.size() - 1;
+	vInputs.push_back(INPUT());
+	int i = vInputs.size() - 1;
 
-    vInputs[i].type = INPUT_KEYBOARD;
-    vInputs[i].ki.wVk = vkCode;
+	vInputs[i].type = INPUT_KEYBOARD;
+	vInputs[i].ki.wVk = vkCode;
 
-    if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
-        vInputs[i].ki.dwFlags = KEYEVENTF_KEYUP;
-    else
-        vInputs[i].ki.dwFlags = 0;
+	if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
+		vInputs[i].ki.dwFlags = KEYEVENTF_KEYUP;
+	else
+		vInputs[i].ki.dwFlags = 0;
 
-    // Logging
-    wprintf(L"Keystroke for: %s\nVirtual Keycode: %d\n", lpBaseName, vkCode);
+	// Logging
+	wprintf(L"Keystroke for: %s\nVirtual Keycode: %d\n", lpBaseName, vkCode);
+
+	if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
+		DWORD now = kbdStruct.time;
+		ALLOW_INPUT = calculateTiming(now);
+	}
 
 	return (ALLOW_INPUT ? 0 : -1);
 }
 
 void replayStoredKeystrokes() {
-    UINT cInputs = vInputs.size();
-    PINPUT pInputs = (INPUT *)malloc(sizeof(INPUT) * cInputs);
-    for (int i = 0; i < cInputs; ++i) {
-        pInputs[i] = vInputs[i];
-    }
+	UINT cInputs = vInputs.size();
+	PINPUT pInputs = (INPUT*)malloc(sizeof(INPUT) * cInputs);
+	for (int i = 0; i < cInputs; ++i) {
+		pInputs[i] = vInputs[i];
+	}
 
-    int res = SendInput(cInputs, pInputs, sizeof(INPUT));
-    vInputs.clear();
+	int res = SendInput(cInputs, pInputs, sizeof(INPUT));
+	vInputs.clear();
 }
 
 void keyboardHook() {
-
-    setHook();
+	setHook();
 	MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0) != 0) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
+	while (GetMessage(&msg, NULL, 0, 0) != 0) {
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
 }

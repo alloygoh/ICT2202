@@ -1,6 +1,4 @@
-**/x64/
-**/x86/
-.vs
-**/.vs/
-.gitignore
-
+x64/
+x86/
+.vs/
+output.log
