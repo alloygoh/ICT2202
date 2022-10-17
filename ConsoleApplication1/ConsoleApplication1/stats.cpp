@@ -5,7 +5,7 @@ int WINDOW_SIZE = 10;
 time_t prevTime = 0;
 std::vector<int> times;
 
-double calculateMean(std::vector<int> v){
+double calculateMean(std::vector<int> v) {
 	double sum = std::accumulate(v.begin(), v.end(), 0.0);
 	return sum / v.size();
 }
@@ -18,9 +18,9 @@ double calculateStandardDeviation(std::vector<int> v, double mean) {
 bool calculateTiming(DWORD now) {
 	DWORD timeDiff = now - prevTime;
 
-	if(prevTime > 0){
+	if (prevTime > 0) {
 		times.push_back(timeDiff);
-	}	
+	}
 
 	prevTime = now;
 

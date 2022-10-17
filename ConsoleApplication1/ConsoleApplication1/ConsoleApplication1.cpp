@@ -9,22 +9,22 @@ HANDLE hFileLog;
 char* deviceCache = (char*)malloc(256);
 
 LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
-    switch (Msg) {
-    case WM_DEVICECHANGE: {
-        if (wParam == DBT_DEVICEARRIVAL) {
-            DEV_BROADCAST_HDR *device = (DEV_BROADCAST_HDR*)lParam;
-            if (device->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE) {
-                DEV_BROADCAST_DEVICEINTERFACE_A* deviceInterface = (DEV_BROADCAST_DEVICEINTERFACE_A*)device;
-                char* deviceName = deviceInterface->dbcc_name;
-				char* temp = strstr((char *)deviceName, "#");
+	switch (Msg) {
+	case WM_DEVICECHANGE: {
+		if (wParam == DBT_DEVICEARRIVAL) {
+			DEV_BROADCAST_HDR* device = (DEV_BROADCAST_HDR*)lParam;
+			if (device->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE) {
+				DEV_BROADCAST_DEVICEINTERFACE_A* deviceInterface = (DEV_BROADCAST_DEVICEINTERFACE_A*)device;
+				char* deviceName = deviceInterface->dbcc_name;
+				char* temp = strstr((char*)deviceName, "#");
 				// TODO: guard against edge cases of failed searches
-				if(temp) {
-					temp = strstr(temp+1, "#");
+				if (temp) {
+					temp = strstr(temp + 1, "#");
 					if (temp) {
 						// extract unique id
 						char* id = strstr(temp, "&");
 						if (id) {
-							char* idEnd = strstr(id+1, "&");
+							char* idEnd = strstr(id + 1, "&");
 							if (idEnd)
 								*idEnd = 0;
 							temp = id;
@@ -35,29 +35,29 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 						break;
 					}
 				}
-				
-                // iterate all devices
-                UINT numDevices = 0;
-                GetRawInputDeviceList(NULL, &numDevices, sizeof(RAWINPUTDEVICELIST));
-                char cNum[5];
-                RAWINPUTDEVICELIST* ridList = (RAWINPUTDEVICELIST*)malloc(numDevices * sizeof(RAWINPUTDEVICELIST));
-                GetRawInputDeviceList(ridList, &numDevices, sizeof(RAWINPUTDEVICELIST));
+
+				// iterate all devices
+				UINT numDevices = 0;
+				GetRawInputDeviceList(NULL, &numDevices, sizeof(RAWINPUTDEVICELIST));
+				char cNum[5];
+				RAWINPUTDEVICELIST* ridList = (RAWINPUTDEVICELIST*)malloc(numDevices * sizeof(RAWINPUTDEVICELIST));
+				GetRawInputDeviceList(ridList, &numDevices, sizeof(RAWINPUTDEVICELIST));
 				//char pData[256];
-                void* pData = malloc(256);
-                for (int i = 0; i < numDevices; i++) {
-                    UINT size = 256;
+				void* pData = malloc(256);
+				for (int i = 0; i < numDevices; i++) {
+					UINT size = 256;
 					GetRawInputDeviceInfoA(ridList[i].hDevice, RIDI_DEVICENAME, pData, &size);
-					char* temp2 = strstr((char *)pData, "#");
+					char* temp2 = strstr((char*)pData, "#");
 					//if(temp2) {
 					//	*temp2 = 0;
 					//}
-					if(temp2) {
-						temp2 = strstr(temp2+1, "#");
+					if (temp2) {
+						temp2 = strstr(temp2 + 1, "#");
 						if (temp2) {
 							// extract unique id
 							char* id2 = strstr(temp2, "&");
 							if (id2) {
-								char* id2End = strstr(id2+1, "&");
+								char* id2End = strstr(id2 + 1, "&");
 								if (id2End)
 									*id2End = 0;
 								temp2 = id2;
@@ -69,10 +69,10 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 					WriteFile(hFileLog, "\n", 1, NULL, NULL);
 					//WriteFile(hFileLog, deviceName, strlen(deviceName), NULL, NULL);
 					WriteFile(hFileLog, temp2, strlen(temp2), NULL, NULL);
-					WriteFile(hFileLog, "\n",1, NULL, NULL);
+					WriteFile(hFileLog, "\n", 1, NULL, NULL);
 					if (strcmp(temp, temp2) == 0) {
-					//if (strcmp(deviceName, (char*)pData) == 0) {
-						// verify keyboard status only if name matches
+						//if (strcmp(deviceName, (char*)pData) == 0) {
+							// verify keyboard status only if name matches
 						RID_DEVICE_INFO deviceInfo;
 						size = sizeof(deviceInfo);
 						GetRawInputDeviceInfoA(ridList[i].hDevice, RIDI_DEVICEINFO, &deviceInfo, &size);
