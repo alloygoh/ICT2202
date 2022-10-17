@@ -22,6 +22,10 @@ std::vector<INPUT> vInputs;
 
 // flag to toggle whether input is let through
 bool ALLOW_INPUT = true;
+// number of chars to check
+int CHECK_LENGTH_OF_INPUT = 6;
+int CUR_LENGTH_OF_INPUT = 0;
+
 
 bool setHook() {
 
@@ -32,6 +36,7 @@ bool setHook() {
 		return 1;
 	}
 	else {
+		CUR_LENGTH_OF_INPUT = 0;
 		wprintf(L"Hook successfully installed!\n");
 	}
 
@@ -82,9 +87,25 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 	if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
 		DWORD now = kbdStruct.time;
 		ALLOW_INPUT = calculateTiming(now);
+		
+		if (CUR_LENGTH_OF_INPUT <= CHECK_LENGTH_OF_INPUT) {
+			CUR_LENGTH_OF_INPUT++;
+		}
+
+		if (CUR_LENGTH_OF_INPUT == CHECK_LENGTH_OF_INPUT) {
+			//calc here and decide if we want to block or allow
+			if (ALLOW_INPUT) {
+				releaseHook();
+				replayStoredKeystrokes();
+			}
+		}
 	}
 
-	return (ALLOW_INPUT ? 0 : -1);
+	//default block until proven otherwise
+	return -1;
+
+	//other algo
+	//return (ALLOW_INPUT ? 0 : -1);
 }
 
 void replayStoredKeystrokes() {
