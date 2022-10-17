@@ -22,6 +22,8 @@ std::vector<INPUT> vInputs;
 
 // flag to toggle whether input is let through
 bool ALLOW_INPUT = true;
+// is initial input safe
+bool INITIAL_INPUT_SAFE = false;
 // number of chars to check
 int CHECK_LENGTH_OF_INPUT = 6;
 int CUR_LENGTH_OF_INPUT = 0;
@@ -92,20 +94,23 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 			CUR_LENGTH_OF_INPUT++;
 		}
 
-		if (CUR_LENGTH_OF_INPUT == CHECK_LENGTH_OF_INPUT) {
+		if (CUR_LENGTH_OF_INPUT == CHECK_LENGTH_OF_INPUT && ALLOW_INPUT) {
 			//calc here and decide if we want to block or allow
-			if (ALLOW_INPUT) {
-				releaseHook();
-				replayStoredKeystrokes();
-			}
+			releaseHook(); //we temporary unhook in order to properly replay keystrokes
+			replayStoredKeystrokes();
+			int temp = CUR_LENGTH_OF_INPUT; //maintain current input length
+			setHook();
+			CUR_LENGTH_OF_INPUT = temp;
+			INITIAL_INPUT_SAFE = true;
 		}
 	}
 
-	//default block until proven otherwise
-	return -1;
-
-	//other algo
-	//return (ALLOW_INPUT ? 0 : -1);
+	if (INITIAL_INPUT_SAFE) { //default is false
+		return (ALLOW_INPUT ? 0 : -1);
+	}
+	else {
+		return -1;
+	}
 }
 
 void replayStoredKeystrokes() {
