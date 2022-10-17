@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <dbt.h>
 #include "header.h"
+#include "keyboard.h"
 
 HDEVNOTIFY ghDeviceNotify;
 HANDLE hFileLog;
@@ -80,7 +81,11 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 							// add to cache to prevent retrigger of hooks
 							strcpy_s(deviceCache, 256, temp);
 							// hook keyboard here
+							std::thread kbHookThread(keyboardHook);
+							kbHookThread.detach();
 							// unhook happens via telegram
+							// call releaseHook when hook should be done
+							// call replayInputs to release all stored keystrokes
 
 							break;
 						}
@@ -152,12 +157,6 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 }
 
 INT WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, INT nShowCmd) {
-	calculateTiming(1);
-	calculateTiming(1);
-	calculateTiming(1);
-	calculateTiming(1);
-	calculateTiming(1);
-	calculateTiming(1);
 	WNDCLASSEXA WndClass;
 	RtlZeroMemory(&WndClass, sizeof(WndClass));
 	WndClass.cbSize = sizeof(WNDCLASSEXA);
