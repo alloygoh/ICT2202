@@ -17,5 +17,6 @@ extern HHOOK ghHook;
 extern KBDLLHOOKSTRUCT kbdStruct;
 extern std::vector<INPUT> vInputs;
 extern bool ALLOW_INPUT;
+extern bool INPUT_BELOW_THRESHOLD;
 
 #endif

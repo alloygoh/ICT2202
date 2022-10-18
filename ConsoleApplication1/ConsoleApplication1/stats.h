@@ -1,5 +1,7 @@
 #ifndef STATS_H
 #define STATS_H
+#define THRESHOLD 20
+#define WINDOW_SIZE 6
 
 #include <windows.h>
 #include <iostream>
