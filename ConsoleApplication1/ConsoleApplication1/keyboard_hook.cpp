@@ -21,7 +21,10 @@ KBDLLHOOKSTRUCT kbdStruct;
 std::vector<INPUT> vInputs;
 
 // flag to toggle whether input is let through
-bool ALLOW_INPUT = true;
+bool ALLOW_INPUT = false;
+bool INPUT_BELOW_THRESHOLD = true;
+int INPUT_LEN = 0;
+
 
 bool setHook() {
 
@@ -81,7 +84,17 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 
 	if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
 		DWORD now = kbdStruct.time;
-		ALLOW_INPUT = calculateTiming(now);
+		INPUT_BELOW_THRESHOLD = calculateTiming(now);
+		
+		//determine whether to release captured inputs once WINDOW_SIZE is reached
+		if (++INPUT_LEN == WINDOW_SIZE) {
+
+			ALLOW_INPUT = INPUT_BELOW_THRESHOLD; // set permanent flag to allow keystrokens through
+			releaseHook(); //temporarily unhook in order to properly replay keystrokes
+			replayStoredKeystrokes();
+			setHook();
+
+		}
 	}
 
 	return (ALLOW_INPUT ? 0 : -1);
