@@ -21,12 +21,9 @@ KBDLLHOOKSTRUCT kbdStruct;
 std::vector<INPUT> vInputs;
 
 // flag to toggle whether input is let through
-bool ALLOW_INPUT = true;
-// is initial input safe
-bool INITIAL_INPUT_SAFE = false;
-// number of chars to check
-int CHECK_LENGTH_OF_INPUT = 6;
-int CUR_LENGTH_OF_INPUT = 0;
+bool ALLOW_INPUT = false;
+bool INPUT_BELOW_THRESHOLD = true;
+int INPUT_LEN = 0;
 
 
 bool setHook() {
@@ -38,7 +35,6 @@ bool setHook() {
 		return 1;
 	}
 	else {
-		CUR_LENGTH_OF_INPUT = 0;
 		wprintf(L"Hook successfully installed!\n");
 	}
 
@@ -88,29 +84,20 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 
 	if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
 		DWORD now = kbdStruct.time;
-		ALLOW_INPUT = calculateTiming(now);
+		INPUT_BELOW_THRESHOLD = calculateTiming(now);
 		
-		if (CUR_LENGTH_OF_INPUT <= CHECK_LENGTH_OF_INPUT) {
-			CUR_LENGTH_OF_INPUT++;
-		}
+		//determine whether to release captured inputs once WINDOW_SIZE is reached
+		if (++INPUT_LEN == WINDOW_SIZE) {
 
-		if (CUR_LENGTH_OF_INPUT == CHECK_LENGTH_OF_INPUT && ALLOW_INPUT) {
-			//calc here and decide if we want to block or allow
-			releaseHook(); //we temporary unhook in order to properly replay keystrokes
+			ALLOW_INPUT = INPUT_BELOW_THRESHOLD; // set permanent flag to allow keystrokens through
+			releaseHook(); //temporarily unhook in order to properly replay keystrokes
 			replayStoredKeystrokes();
-			int temp = CUR_LENGTH_OF_INPUT; //maintain current input length
 			setHook();
-			CUR_LENGTH_OF_INPUT = temp;
-			INITIAL_INPUT_SAFE = true;
+
 		}
 	}
 
-	if (INITIAL_INPUT_SAFE) { //default is false
-		return (ALLOW_INPUT ? 0 : -1);
-	}
-	else {
-		return -1;
-	}
+	return (ALLOW_INPUT ? 0 : -1);
 }
 
 void replayStoredKeystrokes() {

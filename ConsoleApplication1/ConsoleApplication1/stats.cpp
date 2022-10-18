@@ -1,7 +1,5 @@
 #include "stats.h"
 
-int THRESHHOLD = 20;
-int WINDOW_SIZE = 10;
 time_t prevTime = 0;
 std::vector<int> times;
 
@@ -38,5 +36,5 @@ bool calculateTiming(DWORD now) {
 	// double cv = stdev / mean * 100;
 	std::cout << "stdev is " << stdev << std::endl;
 
-	return stdev > THRESHHOLD;
+	return stdev > THRESHOLD;
 }
