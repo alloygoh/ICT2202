@@ -93,7 +93,6 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 			releaseHook(); //temporarily unhook in order to properly replay keystrokes
 			replayStoredKeystrokes();
 			setHook();
-
 		}
 	}
 
@@ -102,12 +101,17 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 
 void replayStoredKeystrokes() {
 	UINT cInputs = vInputs.size();
-	PINPUT pInputs = (INPUT*)malloc(sizeof(INPUT) * cInputs);
 	for (int i = 0; i < cInputs; ++i) {
-		pInputs[i] = vInputs[i];
+		INPUT input = vInputs[i];
+		INPUT pInputs[1] = { input };
+
+		int res = SendInput(1, pInputs, sizeof(INPUT));
+
+		if ((input.ki.wVk == VK_LWIN || input.ki.wVk == VK_RWIN) && input.ki.dwFlags == KEYEVENTF_KEYUP) {
+			Sleep(100);
+		}
 	}
 
-	int res = SendInput(cInputs, pInputs, sizeof(INPUT));
 	vInputs.clear();
 }
 
