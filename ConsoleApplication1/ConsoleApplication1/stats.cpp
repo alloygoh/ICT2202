@@ -1,7 +1,9 @@
 #include "stats.h"
+#include <string>
 
 time_t prevTime = 0;
 std::vector<int> times;
+BOOL seenOutlier = false;
 
 double calculateMean(std::vector<int> v) {
 	double sum = std::accumulate(v.begin(), v.end(), 0.0);
@@ -15,26 +17,43 @@ double calculateStandardDeviation(std::vector<int> v, double mean) {
 
 bool calculateTiming(DWORD now) {
 	DWORD timeDiff = now - prevTime;
-
-	if (prevTime > 0) {
-		times.push_back(timeDiff);
+	if (times.size() > 5) {
+		times.erase(times.begin());
+		OutputDebugStringA("[set end]\n");
 	}
+	std::string temp = "[timediff] " + std::to_string(timeDiff) + "\n";
+	temp += "[timenow] " + std::to_string(now) + "\n";
+	temp += "[timeprev] " + std::to_string(prevTime) + "\n";
+	if (prevTime > 0) {
+		if (!seenOutlier && times.size() && timeDiff > times.back() * 20) {
+			seenOutlier = true;
+		}
+		else {
+			times.push_back(timeDiff);
+		}
+	}
+	//times.push_back(timeDiff);
 
 	prevTime = now;
 
-	if (times.size() <= 1) {
+	if (times.size() < 2) {
+		OutputDebugStringA(temp.c_str());
 		return true;
 	}
 
-	if (times.size() > WINDOW_SIZE) {
-		times.erase(times.begin());
-	}
+	//if (times.size() > WINDOW_SIZE) {
+	//	times.erase(times.begin());
+	//	temp += "[set end]\n";
+	//}
 	double mean = calculateMean(times);
 
 	double stdev = calculateStandardDeviation(times, mean);
 
 	// double cv = stdev / mean * 100;
 	std::cout << "stdev is " << stdev << std::endl;
+	temp += "[stdev] " + std::to_string(stdev) + "\n";
+	
+	OutputDebugStringA(temp.c_str());
 
 	return stdev > THRESHOLD;
 }

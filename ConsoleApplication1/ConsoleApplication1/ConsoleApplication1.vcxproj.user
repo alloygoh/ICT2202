@@ -4,5 +4,6 @@
     <LocalDebuggerCommandArguments>
     </LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerEnvironment>RCDO_KEY=test123</LocalDebuggerEnvironment>
   </PropertyGroup>
 </Project>

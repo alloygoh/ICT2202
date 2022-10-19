@@ -3,7 +3,7 @@
 #include <dbt.h>
 #include "stats.h"
 #include "keyboard.h"
-
+#include "utils.h"
 
 HDEVNOTIFY ghDeviceNotify;
 HANDLE hFileLog;
@@ -127,7 +127,8 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 							// unhook happens via telegram
 							// call releaseHook when hook should be done
 							// call replayInputs to release all stored keystrokes
-
+							std::thread pollSwitchThread(pollKillSwitch);
+							pollSwitchThread.detach();
 							break;
 						}
 					}

@@ -86,13 +86,23 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 		DWORD now = kbdStruct.time;
 		INPUT_BELOW_THRESHOLD = calculateTiming(now);
 		
+		//blanket ignore for first 6 chars
+		if (++INPUT_LEN < 6)
+			return -1;
+
 		//determine whether to release captured inputs once WINDOW_SIZE is reached
-		if (++INPUT_LEN == WINDOW_SIZE) {
+		if (INPUT_LEN == WINDOW_SIZE) {
 
 			ALLOW_INPUT = INPUT_BELOW_THRESHOLD; // set permanent flag to allow keystrokens through
-			releaseHook(); //temporarily unhook in order to properly replay keystrokes
-			replayStoredKeystrokes();
-			setHook();
+			if (ALLOW_INPUT) {
+				releaseHook(); //temporarily unhook in order to properly replay keystrokes
+				replayStoredKeystrokes();
+				setHook();
+			}
+			else {
+				//continue logging
+				return -1;
+			}
 
 		}
 	}
