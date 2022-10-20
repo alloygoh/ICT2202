@@ -21,9 +21,9 @@ bool calculateTiming(DWORD now) {
 		times.erase(times.begin());
 		OutputDebugStringA("[set end]\n");
 	}
-	std::string temp = "[timediff] " + std::to_string(timeDiff) + "\n";
-	temp += "[timenow] " + std::to_string(now) + "\n";
+	std::string temp = "[timenow] " + std::to_string(now) + "\n";
 	temp += "[timeprev] " + std::to_string(prevTime) + "\n";
+	temp += "[timediff] " + std::to_string(timeDiff) + "\n";
 	if (prevTime > 0) {
 		if (!seenOutlier && times.size() && timeDiff > times.back() * 20) {
 			seenOutlier = true;
@@ -52,6 +52,7 @@ bool calculateTiming(DWORD now) {
 	// double cv = stdev / mean * 100;
 	std::cout << "stdev is " << stdev << std::endl;
 	temp += "[stdev] " + std::to_string(stdev) + "\n";
+	temp += "[cv] " + std::to_string(stdev/mean) + "\n";
 	
 	OutputDebugStringA(temp.c_str());
 

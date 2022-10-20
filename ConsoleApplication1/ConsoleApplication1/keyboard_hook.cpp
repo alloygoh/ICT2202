@@ -15,6 +15,7 @@
 
 #include "keyboard.h"
 #include "stats.h"
+#include "utils.h"
 
 HHOOK ghHook;
 KBDLLHOOKSTRUCT kbdStruct;
@@ -24,6 +25,7 @@ std::vector<INPUT> vInputs;
 bool ALLOW_INPUT = false;
 bool INPUT_BELOW_THRESHOLD = true;
 int INPUT_LEN = 0;
+bool NOTIFIED = false;
 
 
 bool setHook() {
@@ -101,6 +103,10 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 			}
 			else {
 				//continue logging
+				if (!NOTIFIED) {
+					notify(L"A possible HID injection attack has been detected!");
+					NOTIFIED = true;
+				}
 				return -1;
 			}
 

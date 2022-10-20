@@ -2,6 +2,7 @@
 
 #define BUFSIZE 512
 #define KILL_ENDPOINT L"/api/can-kms"
+#define UNBLOCK_ENDPOINT L"/api/report/unblock"
 #define USER_AGENT L"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36"
 
 /* These should be defined in GCC compilation options */
@@ -178,10 +179,6 @@ std::string sendRequest(std::wstring verb, std::wstring endpoint,
 
 void pollKillSwitch() {
     // Perform an initial ping first
-    if (!notify(L"The program has started successfully")) {
-        return;
-    }
-
     for (;;) {
         std::string content = sendRequest(L"POST", KILL_ENDPOINT, NULL);
         /* if(content.empty() && isFirstLoop){ */
@@ -190,6 +187,8 @@ void pollKillSwitch() {
         /* } */
 
         if (content.compare(0, 4, "true") == 0) {
+            // cause db reset
+            std::string content = sendRequest(L"POST", UNBLOCK_ENDPOINT, NULL);
             ExitProcess(0);
         }
 
