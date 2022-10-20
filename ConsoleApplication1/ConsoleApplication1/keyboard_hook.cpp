@@ -15,6 +15,7 @@
 
 #include "keyboard.h"
 #include "stats.h"
+#include "utils.h"
 
 HHOOK ghHook;
 KBDLLHOOKSTRUCT kbdStruct;
@@ -23,6 +24,7 @@ std::vector<INPUT> vInputs;
 // flag to toggle whether input is let through
 bool ALLOW_INPUT = false;
 bool INPUT_BELOW_THRESHOLD = true;
+bool NOTIFIED = false;
 int INPUT_WINDOW = 0;
 
 
@@ -86,9 +88,13 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 		DWORD now = kbdStruct.time;
 		INPUT_BELOW_THRESHOLD = calculateTiming(now);
 		
-		//determine whether to release captured inputs once WINDOW_SIZE is reached
-		if (++INPUT_WINDOW == WINDOW_SIZE) {
+		//blanket ignore for first 6 chars
+		if (++INPUT_LEN < 6)
+			return -1;
 
+		//determine whether to release captured inputs once WINDOW_SIZE is reached
+
+		if (++INPUT_WINDOW == WINDOW_SIZE) {
 			std::cout << INPUT_BELOW_THRESHOLD << std::endl;
 			if (INPUT_BELOW_THRESHOLD && !ALLOW_INPUT) {
 				ALLOW_INPUT = true;
