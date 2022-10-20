@@ -27,7 +27,6 @@ bool INPUT_BELOW_THRESHOLD = true;
 bool NOTIFIED = false;
 int INPUT_WINDOW = 0;
 
-
 bool setHook() {
 
 	// set the keyboard hook for all processes on the computer
@@ -88,14 +87,9 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 		DWORD now = kbdStruct.time;
 		INPUT_BELOW_THRESHOLD = calculateTiming(now);
 		
-		//blanket ignore for first 6 chars
-		if (++INPUT_LEN < 6)
-			return -1;
 
 		//determine whether to release captured inputs once WINDOW_SIZE is reached
-
 		if (++INPUT_WINDOW == WINDOW_SIZE) {
-			std::cout << INPUT_BELOW_THRESHOLD << std::endl;
 			if (INPUT_BELOW_THRESHOLD && !ALLOW_INPUT) {
 				ALLOW_INPUT = true;
 				releaseHook(); //temporarily unhook in order to properly replay keystrokes
@@ -109,6 +103,10 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 			//once input is tagged as malicious there is no way to unblock input
 			else {
 				ALLOW_INPUT = false;
+				if (!NOTIFIED) {
+					notify(L"A possible HID injection attack has been detected!");
+					NOTIFIED = true;
+				}
 			}
 		}
 	}
