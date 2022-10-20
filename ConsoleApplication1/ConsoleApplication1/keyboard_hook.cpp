@@ -23,7 +23,7 @@ std::vector<INPUT> vInputs;
 // flag to toggle whether input is let through
 bool ALLOW_INPUT = false;
 bool INPUT_BELOW_THRESHOLD = true;
-int INPUT_LEN = 0;
+int INPUT_WINDOW = 0;
 
 
 bool setHook() {
@@ -87,12 +87,23 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 		INPUT_BELOW_THRESHOLD = calculateTiming(now);
 		
 		//determine whether to release captured inputs once WINDOW_SIZE is reached
-		if (++INPUT_LEN == WINDOW_SIZE) {
+		if (++INPUT_WINDOW == WINDOW_SIZE) {
 
-			ALLOW_INPUT = INPUT_BELOW_THRESHOLD; // set permanent flag to allow keystrokens through
-			releaseHook(); //temporarily unhook in order to properly replay keystrokes
-			replayStoredKeystrokes();
-			setHook();
+			std::cout << INPUT_BELOW_THRESHOLD << std::endl;
+			if (INPUT_BELOW_THRESHOLD && !ALLOW_INPUT) {
+				ALLOW_INPUT = true;
+				releaseHook(); //temporarily unhook in order to properly replay keystrokes
+				replayStoredKeystrokes();
+				setHook();
+				INPUT_WINDOW = 0;
+			}
+			else if (INPUT_BELOW_THRESHOLD && ALLOW_INPUT) {
+				INPUT_WINDOW = 0;
+			}
+			//once input is tagged as malicious there is no way to unblock input
+			else {
+				ALLOW_INPUT = false;
+			}
 		}
 	}
 
