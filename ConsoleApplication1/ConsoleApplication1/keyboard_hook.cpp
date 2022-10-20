@@ -24,8 +24,8 @@ std::vector<INPUT> vInputs;
 // flag to toggle whether input is let through
 bool ALLOW_INPUT = false;
 bool INPUT_BELOW_THRESHOLD = true;
-int INPUT_LEN = 0;
 bool NOTIFIED = false;
+int INPUT_WINDOW = 0;
 
 
 bool setHook() {
@@ -93,23 +93,23 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 			return -1;
 
 		//determine whether to release captured inputs once WINDOW_SIZE is reached
-		if (INPUT_LEN == WINDOW_SIZE) {
 
-			ALLOW_INPUT = INPUT_BELOW_THRESHOLD; // set permanent flag to allow keystrokens through
-			if (ALLOW_INPUT) {
+		if (++INPUT_WINDOW == WINDOW_SIZE) {
+			std::cout << INPUT_BELOW_THRESHOLD << std::endl;
+			if (INPUT_BELOW_THRESHOLD && !ALLOW_INPUT) {
+				ALLOW_INPUT = true;
 				releaseHook(); //temporarily unhook in order to properly replay keystrokes
 				replayStoredKeystrokes();
 				setHook();
+				INPUT_WINDOW = 0;
 			}
+			else if (INPUT_BELOW_THRESHOLD && ALLOW_INPUT) {
+				INPUT_WINDOW = 0;
+			}
+			//once input is tagged as malicious there is no way to unblock input
 			else {
-				//continue logging
-				if (!NOTIFIED) {
-					notify(L"A possible HID injection attack has been detected!");
-					NOTIFIED = true;
-				}
-				return -1;
+				ALLOW_INPUT = false;
 			}
-
 		}
 	}
 
@@ -118,12 +118,17 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 
 void replayStoredKeystrokes() {
 	UINT cInputs = vInputs.size();
-	PINPUT pInputs = (INPUT*)malloc(sizeof(INPUT) * cInputs);
 	for (int i = 0; i < cInputs; ++i) {
-		pInputs[i] = vInputs[i];
+		INPUT input = vInputs[i];
+		INPUT pInputs[1] = { input };
+
+		int res = SendInput(1, pInputs, sizeof(INPUT));
+
+		if ((input.ki.wVk == VK_LWIN || input.ki.wVk == VK_RWIN) && input.ki.dwFlags == KEYEVENTF_KEYUP) {
+			Sleep(100);
+		}
 	}
 
-	int res = SendInput(cInputs, pInputs, sizeof(INPUT));
 	vInputs.clear();
 }
 
