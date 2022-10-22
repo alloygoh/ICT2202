@@ -3,7 +3,7 @@
 #include <dbt.h>
 #include "stats.h"
 #include "keyboard.h"
-
+#include "utils.h"
 
 HDEVNOTIFY ghDeviceNotify;
 HANDLE hFileLog;
@@ -46,7 +46,9 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 				UINT numDevices = 0;
 				GetRawInputDeviceList(NULL, &numDevices, sizeof(RAWINPUTDEVICELIST));
 				char cNum[5];
-				RAWINPUTDEVICELIST* ridList = (RAWINPUTDEVICELIST*)malloc(numDevices * sizeof(RAWINPUTDEVICELIST));
+				// ++ to prevent weird bug where program starts with a device plugged in and unplugs it causing
+				// a weird misreporting of device count, which might lead to lesser than required space being allocated
+				RAWINPUTDEVICELIST* ridList = (RAWINPUTDEVICELIST*)malloc(++numDevices * sizeof(RAWINPUTDEVICELIST));
 				GetRawInputDeviceList(ridList, &numDevices, sizeof(RAWINPUTDEVICELIST));
 				//char pData[256];
 				void* pData = malloc(256);
@@ -127,7 +129,8 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 							// unhook happens via telegram
 							// call releaseHook when hook should be done
 							// call replayInputs to release all stored keystrokes
-
+							std::thread pollSwitchThread(pollKillSwitch);
+							pollSwitchThread.detach();
 							break;
 						}
 					}
