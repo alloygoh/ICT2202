@@ -118,6 +118,7 @@ std::vector<INPUT> vInputs;
 
 // flag to toggle whether input is let through
 bool NOTIFIED = false;
+bool FIRST_CHECK_DONE = false;
 int INPUT_WINDOW = 0;
 
 bool setHook() {
@@ -276,6 +277,7 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 		//determine whether to release captured inputs once WINDOW_SIZE is reached
 		if (++INPUT_WINDOW == WINDOW_SIZE) {
 			if (INPUT_BELOW_THRESHOLD && maliciousIndicators.at(L"SD")) {
+				FIRST_CHECK_DONE = true;
 				maliciousIndicators.at(L"SD") = 0;
 				releaseHook(); //temporarily unhook in order to properly replay keystrokes
 				replayStoredKeystrokes();
@@ -296,7 +298,7 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 	bool isMaliciousInput = maliciousIndicators.at(L"SD") || maliciousIndicators.at(L"MODEL");
 
 	if (isMaliciousInput) {
-		if (!NOTIFIED) {
+		if (!NOTIFIED && FIRST_CHECK_DONE) {
 			notify(L"A possible HID injection attack has been detected!");
 			NOTIFIED = true;
 		}
