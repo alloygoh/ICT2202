@@ -241,6 +241,7 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 	// Logging
 	wprintf(L"Keystroke for: %s\nVirtual Keycode: %d\n", lpBaseName, vkCode);
 
+
 	int isModKey = setModKeyState(vkCode, wParam);
 
 	if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
@@ -271,6 +272,7 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 		std::wcout << kbBuffer << std::endl;
 		std::wcout << kbBufferFiltered << std::endl;
 
+		MyOutputDebugStringW(L"[vkcode] %d\n", vkCode);
 		DWORD now = kbdStruct.time;
 		bool INPUT_BELOW_THRESHOLD = calculateTiming(now);
 
