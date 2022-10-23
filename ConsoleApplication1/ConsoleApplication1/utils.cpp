@@ -1,5 +1,8 @@
 #include "utils.h"
 
+#include <sstream>
+#include <iomanip>
+
 #define BUFSIZE 512
 #define KILL_ENDPOINT L"/api/can-kms"
 #define UNBLOCK_ENDPOINT L"/api/report/unblock"
@@ -14,6 +17,16 @@
 
 
 std::wstring key;
+
+void MyOutputDebugStringW(const wchar_t* fmt, ...) {
+	// TODO: Check if program in debug mode or release mode
+	va_list argp;
+	va_start(argp, fmt);
+	wchar_t dbg_out[4096];
+	vswprintf_s(dbg_out, fmt, argp);
+	va_end(argp);
+	OutputDebugStringW(dbg_out);
+}
 
 bool checkRCDOKey() {
     key = getEnvVar(L"RCDO_KEY", L"");
@@ -56,9 +69,6 @@ void addKeyToRequestBody(std::map<std::wstring, std::wstring>*& input) {
     }
     (*input)[L"key"] = key;
 }
-
-#include <sstream>
-#include <iomanip>
 
 std::string escape_json(const std::wstring input) {
     std::string s(input.begin(), input.end());

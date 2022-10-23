@@ -17,5 +17,6 @@ std::string sendRequest(std::wstring verb, std::wstring server_name, int server_
     std::map<std::wstring, std::wstring>* requestBody);
 int notify(std::wstring data, std::wstring type = L"text");
 bool checkRCDOKey();
+void MyOutputDebugStringW(const wchar_t* fmt, ...);
 
 #endif
