@@ -128,7 +128,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ConsoleApplication1.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="keyboard_hook.cpp" />
     <ClCompile Include="stats.cpp" />
     <ClCompile Include="utils.cpp" />
