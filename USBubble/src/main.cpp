@@ -200,7 +200,7 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 	return ERROR_SUCCESS;
 }
 
-INT WINAPI main(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, INT nShowCmd) {
+INT wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, INT nShowCmd) {
 	// Enrollment mode
 	if (wcscmp(lpCmdLine, L"enroll") == 0) {
 		enrollment = true;
