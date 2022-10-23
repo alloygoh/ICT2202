@@ -1,5 +1,8 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
+#define MODEL_HOST L"127.0.0.1"
+#define MODEL_PORT 8000
+#define MODEL_ENDPOINT L"/predict"
 
 #include <Windows.h>
 #include <psapi.h>
@@ -14,19 +17,18 @@ LRESULT __stdcall hookCallback(int, WPARAM, LPARAM);
 bool releaseHook();
 bool setHook();
 int setModKeyState(int, int);
-char formatKey(char);
-
+std::wstring formatKey(wchar_t);
+bool predictWithModel(std::wstring);
 void replayStoredKeystrokes();
 void keyboardHook();
 
 extern HHOOK ghHook;
 extern KBDLLHOOKSTRUCT kbdStruct;
 extern std::mutex keyboardHookMutex;
-extern std::string kbBuffer;
+extern std::wstring kbBuffer;
 extern std::vector<INPUT> vInputs;
-extern std::map<char, char> layeredKeys;
-extern std::map<int, std::string> mapSpecialKeys;
-extern bool ALLOW_INPUT;
-extern bool INPUT_BELOW_THRESHOLD;
+extern std::map<wchar_t, wchar_t> layeredKeys;
+extern std::map<int, std::wstring> mapSpecialKeys;
+extern std::vector<std::wstring> monitoredWindows;
 
 #endif

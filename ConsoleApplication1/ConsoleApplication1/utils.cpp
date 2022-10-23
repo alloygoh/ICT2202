@@ -98,7 +98,7 @@ int notify(std::wstring data, std::wstring type) {
     std::map<std::wstring, std::wstring> requestBody;
     requestBody[L"message"] = data;
     requestBody[L"type"] = type;
-    std::string out = sendRequest(L"POST", notifyEndpoint, &requestBody);
+    std::string out = sendRequest(L"POST", SERVER_NAME, SERVER_PORT, notifyEndpoint, &requestBody);
     return out == "true";
 }
 
@@ -108,7 +108,7 @@ int notify(std::wstring data, std::wstring type) {
  * endpoint (string): /api/something
  * requestBody (JSON string): {"key": "msg"}
  */
-std::string sendRequest(std::wstring verb, std::wstring endpoint,
+std::string sendRequest(std::wstring verb, std::wstring server_name, int server_port, std::wstring endpoint,
     std::map<std::wstring, std::wstring>* requestBody) {
     // Setup
     addKeyToRequestBody(requestBody);
@@ -116,8 +116,8 @@ std::string sendRequest(std::wstring verb, std::wstring endpoint,
 
     HINTERNET hInternet = InternetOpenW(USER_AGENT,
         INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
-    HINTERNET hConnect = InternetConnectW(hInternet, SERVER_NAME,
-        SERVER_PORT, NULL, NULL, INTERNET_SERVICE_HTTP, 0, 0);
+    HINTERNET hConnect = InternetConnectW(hInternet, server_name.c_str(),
+        server_port, NULL, NULL, INTERNET_SERVICE_HTTP, 0, 0);
 
     // GET Request
     HINTERNET hHttpFile = HttpOpenRequestW(hConnect, verb.c_str(), endpoint.c_str(),
@@ -180,7 +180,7 @@ std::string sendRequest(std::wstring verb, std::wstring endpoint,
 void pollKillSwitch() {
     // Perform an initial ping first
     for (;;) {
-        std::string content = sendRequest(L"POST", KILL_ENDPOINT, NULL);
+        std::string content = sendRequest(L"POST", SERVER_NAME, SERVER_PORT, KILL_ENDPOINT, NULL);
         /* if(content.empty() && isFirstLoop){ */
         /*     Sleep(5000); */
         /*     return; */
@@ -188,7 +188,7 @@ void pollKillSwitch() {
 
         if (content.compare(0, 4, "true") == 0) {
             // cause db reset
-            std::string content = sendRequest(L"POST", UNBLOCK_ENDPOINT, NULL);
+            std::string content = sendRequest(L"POST", SERVER_NAME, SERVER_PORT, UNBLOCK_ENDPOINT, NULL);
             ExitProcess(0);
         }
 
