@@ -200,18 +200,21 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 	return ERROR_SUCCESS;
 }
 
-INT WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, INT nShowCmd) {
-	// enrollment mode
+INT WINAPI main(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, INT nShowCmd) {
+	// Enrollment mode
 	if (wcscmp(lpCmdLine, L"enroll") == 0) {
 		enrollment = true;
 	}
-	// populate whitelist
-	char* path;
-	size_t pathLen = 0;
-	_dupenv_s(&path, &pathLen, "APPDATA");
-	std::string configPath(path);
-	configPath = configPath + "\\ICT2202";
-	// ensure directory exists
+
+	// Populate whitelist
+	//char* path;
+	//size_t pathLen = 0;
+	//_dupenv_s(&path, &pathLen, "APPDATA");
+	//std::string configPath(path);
+	//configPath = configPath + "\\ICT2202";
+	std::string configPath = "APPDATA\\ICT2202";
+
+	// Ensure directory exists
 	CreateDirectoryA(configPath.c_str(), NULL);
 	configPath = configPath + "\\config";
 	HANDLE hFileConfig = CreateFileA(configPath.c_str(),GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -230,6 +233,8 @@ INT WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		knownWhitelist = (char*)calloc(1, 1);
 	}	
 	CloseHandle(hFileConfig);
+
+	// Hook onto the connect USB events
 	WNDCLASSEXA WndClass;
 	RtlZeroMemory(&WndClass, sizeof(WndClass));
 	WndClass.cbSize = sizeof(WNDCLASSEXA);
