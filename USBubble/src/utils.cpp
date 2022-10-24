@@ -179,7 +179,7 @@ std::string sendRequest(std::wstring verb, std::wstring server_name, int server_
 	std::string content((char*)data);
 	MyOutputDebugStringW(L"[+] Endpoint: %ls\n", endpoint.c_str());
 	MyOutputDebugStringW(L"[+] Content-Length: %d\n", copied);
-	MyOutputDebugStringW(L"[+] Content: %s\n", content.c_str());
+	MyOutputDebugStringW(L"[+] Content: %S\n", content.c_str());
 
 	// process stuff here
 
