@@ -11,8 +11,8 @@ BOOL seenOutlier = false;
 
 double calculateMedian(std::vector<double> v) {
 	size_t n = v.size() / 2;
-    std::nth_element(v.begin(), v.begin()+n, v.end());
-    return v[n];
+	std::nth_element(v.begin(), v.begin()+n, v.end());
+	return v[n];
 }
 
 double calculateMean(std::vector<double> v) {

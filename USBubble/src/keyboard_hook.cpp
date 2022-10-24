@@ -140,7 +140,6 @@ bool setHook() {
 }
 
 bool releaseHook() {
-
 	return UnhookWindowsHookEx(ghHook);
 }
 
@@ -183,7 +182,7 @@ int setModKeyState(int vkCode, int event){
 }
 
 std::wstring formatKey(wchar_t key){
-    // handles the transforming of keys that are modified using the SHIFT and CapsLock keys
+	// handles the transforming of keys that are modified using the SHIFT and CapsLock keys
 
 	std::wstring key_string = { key };
 
@@ -192,20 +191,20 @@ std::wstring formatKey(wchar_t key){
 		return key_string;
 	}
 
-    if (modKeyStates.at(L"SHIFT")){
-        auto layeredKeyEntry = layeredKeys.find(key);
-        key_string[0] = (layeredKeyEntry == layeredKeys.end()) ? key : layeredKeyEntry->second;
-    }
+	if (modKeyStates.at(L"SHIFT")){
+		auto layeredKeyEntry = layeredKeys.find(key);
+		key_string[0] = (layeredKeyEntry == layeredKeys.end()) ? key : layeredKeyEntry->second;
+	}
 
-    return key_string;
+	return key_string;
 }
 
 bool predictWithModel(std::wstring data) {
-    std::map<std::wstring, std::wstring> requestBody;
-    requestBody[L"content"] = data;
-    std::string out = sendRequest(L"POST", MODEL_HOST, MODEL_PORT, MODEL_ENDPOINT, &requestBody);
+	std::map<std::wstring, std::wstring> requestBody;
+	requestBody[L"content"] = data;
+	std::string out = sendRequest(L"POST", MODEL_HOST, MODEL_PORT, MODEL_ENDPOINT, &requestBody);
 
-    return stoi(out);
+	return stoi(out);
 }
 
 bool amsiDetect(std::wstring data) {
@@ -229,7 +228,6 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 	}
 
 	// Retrieve name of process that the keystroke is meant for
-
 	HWND hWnd = GetForegroundWindow();
 	DWORD dwProcessId;
 	GetWindowThreadProcessId(hWnd, &dwProcessId);
