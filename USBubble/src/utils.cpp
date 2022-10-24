@@ -1,3 +1,4 @@
+#include "keyboard.h"
 #include "utils.h"
 
 #include <sstream>
@@ -185,21 +186,28 @@ std::string sendRequest(std::wstring verb, std::wstring server_name, int server_
 	return content;
 }
 
+// Polls whether to unblock device
+std::mutex pollKillSwitchMutex;
 void pollKillSwitch() {
-    // Perform an initial ping first
-    for (;;) {
-        std::string content = sendRequest(L"POST", SERVER_NAME, SERVER_PORT, KILL_ENDPOINT, NULL);
-        /* if(content.empty() && isFirstLoop){ */
-        /*     Sleep(5000); */
-        /*     return; */
-        /* } */
+	if (!pollKillSwitchMutex.try_lock()) {
+		return;
+	}
+	for (;;) {
+		// Polls to server to ask whether it can kill itself
+		std::string content = sendRequest(L"POST", SERVER_NAME, SERVER_PORT, KILL_ENDPOINT, NULL);
 
-        if (content.compare(0, 4, "true") == 0) {
-            // cause db reset
-            std::string content = sendRequest(L"POST", SERVER_NAME, SERVER_PORT, UNBLOCK_ENDPOINT, NULL);
-            ExitProcess(0);
-        }
+		if (content.compare(0, 4, "true") == 0) {
+			// Notifies the server that it has performed the function
+			std::string content = sendRequest(L"POST", SERVER_NAME, SERVER_PORT, UNBLOCK_ENDPOINT, NULL);
 
-        Sleep(200);
-    }
+			// Resets all the indicators
+			maliciousIndicatorsMutex.lock();
+			for (auto const& it : maliciousIndicators) {
+				maliciousIndicators[it.first] = 0;
+			}
+			maliciousIndicatorsMutex.unlock();
+		}
+
+		Sleep(200);
+	}
 }

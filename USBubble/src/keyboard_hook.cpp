@@ -13,11 +13,51 @@
  * }
  */
 
-#include <Windows.h>
-#include <amsi.h>
 #include "keyboard.h"
 #include "stats.h"
 #include "utils.h"
+
+// "Global variables"
+std::mutex maliciousIndicatorsMutex;
+std::mutex hasNewDeviceMutex;
+bool hasNewDevice = true;
+// keeps track of the different checks performed
+// whether input should be allowed is an OR operation between all elements
+std::map<std::wstring, bool> maliciousIndicators = {
+	{L"SD", 0},
+	{L"MODEL", 0},
+	{L"AMSI", 0},
+};
+
+/* Start of thread-safe functions */
+// Returns the value of hasNewDevice (thread safe)
+bool getHasNewDevice() {
+	hasNewDeviceMutex.lock();
+	bool result = hasNewDevice;
+	hasNewDeviceMutex.unlock();
+	return result;
+}
+
+void setHasNewDevice(bool value) {
+	hasNewDeviceMutex.lock();
+	hasNewDevice = value;
+	hasNewDeviceMutex.unlock();
+}
+
+bool getMaliciousIndicator(std::wstring key) {
+	maliciousIndicatorsMutex.lock();
+	bool result = maliciousIndicators.at(key);
+	maliciousIndicatorsMutex.unlock();
+	return result;
+}
+
+std::pair<std::map<std::wstring, bool>::iterator, bool> setMaliciousIndicator(std::wstring key, bool value) {
+	maliciousIndicatorsMutex.lock();
+	std::pair<std::map<std::wstring, bool>::iterator, bool> result = maliciousIndicators.insert_or_assign(key, value);
+	maliciousIndicatorsMutex.unlock();
+	return result;
+}
+/* End of thread-safe functions */
 
  // maps keys that are hidden behind the SHIFT layer
 std::map<wchar_t, wchar_t> layeredKeys = {
@@ -98,14 +138,6 @@ std::map<int, std::wstring> mapSpecialKeys = {
 std::map<std::wstring, bool> modKeyStates = {
 	{L"SHIFT", 0},
 	{L"CAPS", 0},
-};
-
-// keeps track of the different checks performed
-// SD starts at 1 because input is assumed to be malicious until we perform the 6 character check
-// whether input should be allowed is an OR operation between both states
-std::map<std::wstring, bool> maliciousIndicators = {
-	{L"SD", 1},
-	{L"MODEL", 0},
 };
 
 // Whitelisted window names to monitor
@@ -249,79 +281,82 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 	else
 		vInputs[i].ki.dwFlags = 0;
 
-	// Logging
-	wprintf(L"Keystroke for: %s\nVirtual Keycode: %d\n", lpBaseName, vkCode);
-
-
 	int isModKey = setModKeyState(vkCode, wParam);
 
-	if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
-
+	if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
 		if (!isModKey) {
 			std::wstring key;
 			if (mapSpecialKeys.find(vkCode) != mapSpecialKeys.end()) {
 				key = mapSpecialKeys.at(vkCode);
-
-				kbBuffer += key;
-			}
-			else {
+			} else {
 				HKL kbLayout = GetKeyboardLayout(GetCurrentProcessId());
 
 				key = formatKey(MapVirtualKeyExW(vkCode, MAPVK_VK_TO_CHAR, kbLayout));
-				kbBuffer += key;
 			}
+			//kbBuffer += key;
 
 			if (std::find(monitoredWindows.begin(), monitoredWindows.end(), lpBaseName) != monitoredWindows.end()) {
 				kbBufferFiltered += key;
 
 				if (vkCode == VK_RETURN) {
 					// ML detection
-					maliciousIndicators.at(L"MODEL") = predictWithModel(kbBufferFiltered);
+					setMaliciousIndicator(L"MODEL", predictWithModel(kbBufferFiltered));
+
 					// AMSI sig detection
-					maliciousIndicators.at(L"AMSI") = amsiDetect(kbBufferFiltered);
-					if (NOTIFIED) {
-						std::wstring message = L"The following input were sent to a high-risk application:\n" + kbBufferFiltered;
-						notify(message.data());
-					}
+					setMaliciousIndicator(L"AMSI", amsiDetect(kbBufferFiltered));
+
+					std::wstring message = L"The following input were sent to a high-risk application:\n" + kbBufferFiltered;
+					std::thread(notify, message, L"file").detach();
 				}
 			}
 		}
 
-
-		std::wcout << kbBuffer << std::endl;
-		std::wcout << kbBufferFiltered << std::endl;
+		std::wcout << L"kbBuffer: " << kbBuffer << std::endl;
+		std::wcout << L"kbBufferFiltered: " << kbBufferFiltered << std::endl;
 
 		MyOutputDebugStringW(L"[vkcode] %d\n", vkCode);
 		DWORD now = kbdStruct.time;
-		bool INPUT_BELOW_THRESHOLD = calculateTiming(now);
+		bool allowInput = calculateTiming(now);
 
-		//determine whether to release captured inputs once WINDOW_SIZE is reached
-		if (++INPUT_WINDOW == WINDOW_SIZE) {
-			FIRST_CHECK_DONE = true;
-			if (INPUT_BELOW_THRESHOLD && maliciousIndicators.at(L"SD")) {
-				//FIRST_CHECK_DONE = true;
-				maliciousIndicators.at(L"SD") = 0;
+		// Determine whether to release captured inputs once WINDOW_SIZE is reached
+		if (INPUT_WINDOW < WINDOW_SIZE) {
+			++INPUT_WINDOW;
+		} else  if (INPUT_WINDOW == WINDOW_SIZE) {
+			++INPUT_WINDOW;
+			if (allowInput) {
 				releaseHook(); //temporarily unhook in order to properly replay keystrokes
 				replayStoredKeystrokes();
 				setHook();
-				INPUT_WINDOW = 0;
-			}
-			else if (INPUT_BELOW_THRESHOLD && !maliciousIndicators.at(L"SD")) {
-				INPUT_WINDOW = 0;
-			}
-			//once input is tagged as malicious there is no way to unblock input
-			else {
-				maliciousIndicators.at(L"SD") = 1;
-			}
-		}
 
+				setHasNewDevice(false);
+			} //once input is tagged as malicious there is no way to unblock input
+			else {
+				setMaliciousIndicator(L"SD", true);
+			}
+		} else if (!maliciousIndicators.at(L"SD")) {
+			setMaliciousIndicator(L"SD", int(!allowInput));
+		}
 	}
 
-	bool isMaliciousInput = maliciousIndicators.at(L"SD") || maliciousIndicators.at(L"MODEL");
+	if (getHasNewDevice()) {
+		// If the device is new, continue monitoring, and don't allow
+		return -1;
+	}
+
+	// Returns true if any item in the map is true
+	maliciousIndicatorsMutex.lock();
+	std::wstring temp = L"[malicious indicators]\n";
+	for (auto const& it : maliciousIndicators) {
+		temp += it.first + L" " + std::to_wstring(it.second) + L"\n";
+	}
+	MyOutputDebugStringW(temp.c_str());
+	
+	bool isMaliciousInput = std::any_of(maliciousIndicators.begin(), maliciousIndicators.end(), [](const auto& p) { return p.second; });
+	maliciousIndicatorsMutex.unlock();
 
 	if (isMaliciousInput) {
-		if (!NOTIFIED && FIRST_CHECK_DONE) {
-			notify(L"A possible HID injection attack has been detected!");
+		if (!NOTIFIED) {
+			std::thread(notify, L"A possible HID injection attack has been detected!", L"text").detach();
 			NOTIFIED = true;
 		}
 

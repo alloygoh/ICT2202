@@ -1,17 +1,24 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
-#define MODEL_HOST L"127.0.0.1"
+#define MODEL_HOST L"localhost"
 #define MODEL_PORT 8000
 #define MODEL_ENDPOINT L"/predict"
 
 #include <Windows.h>
 #include <psapi.h>
+#include <amsi.h>
+#include <algorithm>
 #include <ctime>
 #include <map>
 #include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
+
+extern std::map<std::wstring, bool> maliciousIndicators;
+extern std::mutex maliciousIndicatorsMutex;
+extern bool hasNewDevice;
+extern std::mutex hasNewDeviceMutex;
 
 LRESULT __stdcall hookCallback(int, WPARAM, LPARAM);
 bool releaseHook();
