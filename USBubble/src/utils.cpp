@@ -116,7 +116,7 @@ int notify(std::wstring data, std::wstring type) {
  * Examples
  * verb (string): GET/POST
  * endpoint (string): /api/something
- * requestBody (JSON string): {"key": "msg"}
+ * requestBody (map pointer): {"key": "msg"}
  */
 std::string sendRequest(std::wstring verb, std::wstring server_name, int server_port, std::wstring endpoint,
 	std::map<std::wstring, std::wstring>* requestBody) {
@@ -136,8 +136,7 @@ std::string sendRequest(std::wstring verb, std::wstring server_name, int server_
 	std::wstring headers = L"Content-Type: application/json";
 	if (!HttpSendRequestW(hHttpFile, headers.c_str(), headers.size(),
 		(LPVOID)szRequestBody.c_str(), szRequestBody.size())) {
-		std::wcout << L"HttpSendRequest Failed" << std::endl;
-		std::wcout << GetLastError() << std::endl;
+		MyOutputDebugStringW(L"HttpSendRequest Failed: %d\n", GetLastError());
 		return "";
 	}
 
@@ -146,8 +145,7 @@ std::string sendRequest(std::wstring verb, std::wstring server_name, int server_
 	if (!(HttpQueryInfoW(hHttpFile,
 		HTTP_QUERY_CONTENT_LENGTH | HTTP_QUERY_FLAG_NUMBER, &contentlen,
 		&size_f, NULL) && contentlen > 0)) {
-		std::wcout << L"HttpQueryInfo Failed" << std::endl;
-		std::wcout << GetLastError() << std::endl;
+		MyOutputDebugStringW(L"HttpQueryInfo Failed %d\n", GetLastError());
 		return "";
 	}
 
@@ -167,7 +165,7 @@ std::string sendRequest(std::wstring verb, std::wstring server_name, int server_
 			dataArr[dwBytesRead] = '\x00';
 		}
 		if (!bRead)
-			std::wcout << L"InternetReadFile Failed" << std::endl;
+			MyOutputDebugStringW(L"InternetReadFile Failed");
 		else {
 			memcpy_s(currentPtr, contentlen - copied, dataArr, dwBytesRead);
 			currentPtr += dwBytesRead;
