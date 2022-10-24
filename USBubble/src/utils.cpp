@@ -151,10 +151,13 @@ std::string sendRequest(std::wstring verb, std::wstring server_name, int server_
 	}
 
 	BYTE* data = (BYTE*)malloc(contentlen + 1);
+	if (data == NULL) {
+		return "";
+	}
 	BYTE* currentPtr = data;
 	DWORD copied = 0;
 	for (;;) {
-		BYTE dataArr[BUFSIZE];
+		BYTE dataArr[BUFSIZE] = { 0 };
 		DWORD dwBytesRead;
 		BOOL bRead;
 		bRead = InternetReadFile(hHttpFile, dataArr, BUFSIZE, &dwBytesRead);
@@ -174,9 +177,9 @@ std::string sendRequest(std::wstring verb, std::wstring server_name, int server_
 		}
 	}
 	std::string content((char*)data);
-	std::wcout << L"[+] Endpoint: " << endpoint << std::endl;
-	std::wcout << L"[+] Content-Length: " << std::to_wstring(copied) << std::endl;
-	std::cout << "[+] Content: " << content << std::endl;
+	MyOutputDebugStringW(L"[+] Endpoint: %ls\n", endpoint.c_str());
+	MyOutputDebugStringW(L"[+] Content-Length: %d\n", copied);
+	MyOutputDebugStringW(L"[+] Content: %s\n", content.c_str());
 
 	// process stuff here
 
