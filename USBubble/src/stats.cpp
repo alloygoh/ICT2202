@@ -4,7 +4,6 @@
 #include <algorithm>
 
 #define WINDOW_TIMEOUT 10000 // In milliseconds
-#define WINDOW_SIZE_MILLISECONDS 1000
 time_t prevTime = 0;
 std::vector<double> times;
 BOOL seenOutlier = false;
@@ -24,36 +23,17 @@ double calculateStandardDeviation(std::vector<double> v, double mean) {
 	double sq_sum = std::inner_product(v.begin(), v.end(), v.begin(), 0.0);
 	if (sq_sum <= 0) {
 		// Detect overflow
-		return THRESHOLD + 1;
+		return STDEV_THRESHHOLD + 1;
 	}
 	MyOutputDebugStringW(L"[squared sum] %lf\n", sq_sum);
 	return std::sqrt(sq_sum / v.size() - mean * mean);
 }
 
-// Remove elements in the sliding window that is too long ago
-void removeStaleSlidingWindowElements(std::vector<double>& v) {
-	// Ensure that the window size stays the same
-	auto it = v.rbegin();
-	double sum = 0;
-	while (it != v.rend()) {
-		double value = *it;
-		sum += value;
-		if (sum > WINDOW_SIZE_MILLISECONDS) {
-			it = decltype(it)(v.erase(std::next(it).base()));
-		} else {
-			++it;
-		}
-	}
-}
-
 void addSlidingWindowElement(std::vector<double>& v, double item) {
-	if (item > WINDOW_SIZE_MILLISECONDS) {
-		v.clear();
-		return;
-	}
-
 	v.push_back(item);
-	removeStaleSlidingWindowElements(v);
+	if (v.size() > WINDOW_SIZE) {
+		v.erase(v.begin());
+	}
 }
 
 bool calculateTiming(DWORD now) {
@@ -97,5 +77,5 @@ bool calculateTiming(DWORD now) {
 	MyOutputDebugStringW(L"[stdev] %lf\n", stdev);
 	MyOutputDebugStringW(L"[cv] %lf\n", cv);
 
-	return stdev > THRESHOLD;
+	return stdev > STDEV_THRESHHOLD || mean > MEAN_THRESHHOLD;
 }
