@@ -17,10 +17,12 @@
 #include "stats.h"
 #include "utils.h"
 
-// "Global variables"
+ // "Global variables"
 std::mutex maliciousIndicatorsMutex;
 std::mutex hasNewDeviceMutex;
 bool hasNewDevice = true;
+int TOTAL_CHAR_COUNT = 0;
+std::mutex totalCharCountMutex;
 // keeps track of the different checks performed
 // whether input should be allowed is an OR operation between all elements
 std::map<std::wstring, bool> maliciousIndicators = {
@@ -30,7 +32,26 @@ std::map<std::wstring, bool> maliciousIndicators = {
 };
 
 /* Start of thread-safe functions */
-// Returns the value of hasNewDevice (thread safe)
+// Gets current char count (thread safe)
+void setTotalCharCount(int value) {
+	totalCharCountMutex.lock();
+	TOTAL_CHAR_COUNT = value;
+	totalCharCountMutex.unlock();
+}
+
+void incrementTotalCharCount() {
+	totalCharCountMutex.lock();
+	++TOTAL_CHAR_COUNT;
+	totalCharCountMutex.unlock();
+}
+
+int getTotalCharCount() {
+	totalCharCountMutex.lock();
+	int result = TOTAL_CHAR_COUNT;
+	totalCharCountMutex.unlock();
+	return result;
+}
+
 bool getHasNewDevice() {
 	hasNewDeviceMutex.lock();
 	bool result = hasNewDevice;
@@ -154,7 +175,6 @@ HAMSICONTEXT ghAMSI;
 // flag to toggle whether input is let through
 bool NOTIFIED = false;
 bool FIRST_CHECK_DONE = false;
-int INPUT_WINDOW = 0;
 
 bool setHook() {
 
@@ -176,7 +196,7 @@ bool releaseHook() {
 }
 
 
-int setModKeyState(int vkCode, int event){
+int setModKeyState(int vkCode, int event) {
 	std::map<int, std::wstring> vkCodeToString = {
 		{VK_SHIFT, L"SHIFT"},
 		{VK_LSHIFT, L"SHIFT"},
@@ -203,7 +223,7 @@ int setModKeyState(int vkCode, int event){
 
 	int isKeyDown = (event == WM_KEYDOWN || event == WM_SYSKEYDOWN);
 
-	if (keyName != L"CAPS"){
+	if (keyName != L"CAPS") {
 		modKeyStates.at(keyName) = isKeyDown;
 		return 1;
 	}
@@ -213,7 +233,7 @@ int setModKeyState(int vkCode, int event){
 	return 1;
 }
 
-std::wstring formatKey(wchar_t key){
+std::wstring formatKey(wchar_t key) {
 	// handles the transforming of keys that are modified using the SHIFT and CapsLock keys
 
 	std::wstring key_string = { key };
@@ -223,7 +243,7 @@ std::wstring formatKey(wchar_t key){
 		return key_string;
 	}
 
-	if (modKeyStates.at(L"SHIFT")){
+	if (modKeyStates.at(L"SHIFT")) {
 		auto layeredKeyEntry = layeredKeys.find(key);
 		key_string[0] = (layeredKeyEntry == layeredKeys.end()) ? key : layeredKeyEntry->second;
 	}
@@ -288,7 +308,8 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 			std::wstring key;
 			if (mapSpecialKeys.find(vkCode) != mapSpecialKeys.end()) {
 				key = mapSpecialKeys.at(vkCode);
-			} else {
+			}
+			else {
 				HKL kbLayout = GetKeyboardLayout(GetCurrentProcessId());
 
 				key = formatKey(MapVirtualKeyExW(vkCode, MAPVK_VK_TO_CHAR, kbLayout));
@@ -316,10 +337,18 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 		bool allowInput = calculateTiming(now);
 
 		// Determine whether to release captured inputs once WINDOW_SIZE is reached
-		if (INPUT_WINDOW < WINDOW_SIZE) {
-			++INPUT_WINDOW;
-		} else  if (INPUT_WINDOW == WINDOW_SIZE) {
-			++INPUT_WINDOW;
+		if (getTotalCharCount() < WINDOW_SIZE) {
+			// If window size is not big enough, continue monitoring, and don't do anything
+			incrementTotalCharCount();
+			return -1;
+		} 
+
+		if (!getMaliciousIndicator(L"SD")) {
+			setMaliciousIndicator(L"SD", int(!allowInput));
+		}
+
+		if (getTotalCharCount() == WINDOW_SIZE) {
+			incrementTotalCharCount();
 			if (allowInput) {
 				releaseHook(); //temporarily unhook in order to properly replay keystrokes
 				replayStoredKeystrokes();
@@ -327,15 +356,10 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 
 				setHasNewDevice(false);
 			} //once input is tagged as malicious there is no way to unblock input
-			else {
-				setMaliciousIndicator(L"SD", true);
-			}
-		} else if (!maliciousIndicators.at(L"SD")) {
-			setMaliciousIndicator(L"SD", int(!allowInput));
 		}
 	}
 
-	if (getHasNewDevice()) {
+	if (getTotalCharCount() < WINDOW_SIZE) {
 		// If the device is new, continue monitoring, and don't allow
 		return -1;
 	}
@@ -347,7 +371,7 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 		temp += it.first + L" " + std::to_wstring(it.second) + L"\n";
 	}
 	MyOutputDebugStringW(temp.c_str());
-	
+
 	bool isMaliciousInput = std::any_of(maliciousIndicators.begin(), maliciousIndicators.end(), [](const auto& p) { return p.second; });
 	maliciousIndicatorsMutex.unlock();
 

@@ -17,8 +17,7 @@
 
 extern std::map<std::wstring, bool> maliciousIndicators;
 extern std::mutex maliciousIndicatorsMutex;
-extern bool hasNewDevice;
-extern std::mutex hasNewDeviceMutex;
+void setTotalCharCount(int value);
 
 LRESULT __stdcall hookCallback(int, WPARAM, LPARAM);
 bool releaseHook();
