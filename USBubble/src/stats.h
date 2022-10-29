@@ -1,7 +1,8 @@
 #ifndef STATS_H
 #define STATS_H
-#define THRESHOLD 20
-#define WINDOW_SIZE 6
+#define STDEV_THRESHHOLD 10
+#define MEAN_THRESHHOLD 15
+#define WINDOW_SIZE 10
 
 #include <windows.h>
 #include <iostream>
@@ -9,8 +10,6 @@
 #include <numeric>
 #include <cmath>
 
-double calculateMean(std::vector<int> v);
-double calculateStandardDeviation(std::vector<int> v, double mean);
 bool calculateTiming(DWORD now);
 
 #endif
