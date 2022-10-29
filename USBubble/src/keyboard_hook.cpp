@@ -326,8 +326,17 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 					// AMSI sig detection
 					setMaliciousIndicator(L"AMSI", amsiDetect(kbBufferFiltered));
 
-					std::wstring message = L"The following input were sent to a high-risk application:\n" + kbBufferFiltered;
-					std::thread(notify, message, L"file").detach();
+					maliciousIndicatorsMutex.lock();
+					bool isMaliciousInput = std::any_of(maliciousIndicators.begin(), maliciousIndicators.end(), [](const auto& p) { return p.second; });
+					maliciousIndicatorsMutex.unlock();
+
+					if (isMaliciousInput) {
+						// clear buffer
+						std::wstring message = L"The following input were sent to a high-risk application:\n" + kbBufferFiltered;
+						std::thread(notify, message, L"file").detach();
+
+						kbBufferFiltered = L"";
+					}
 				}
 			}
 		}
