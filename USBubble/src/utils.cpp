@@ -9,10 +9,6 @@
 #define UNBLOCK_ENDPOINT L"/api/report/unblock"
 #define USER_AGENT L"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36"
 
-/* These should be defined in GCC compilation options */
-/* #define SERVER_NAME L"localhost" */
-/* #define SERVER_PORT 5000 */
-
 #define SERVER_NAME L"df.d0minik.me"
 #define SERVER_PORT 5000
 
@@ -29,9 +25,8 @@ void MyOutputDebugStringW(const wchar_t* fmt, ...) {
 	OutputDebugStringW(dbg_out);
 }
 
-bool checkRCDOKey() {
-	key = getEnvVar(L"RCDO_KEY", L"");
-	return !key.empty();
+std::wstring getAPIKey() {
+	return getEnvVar(L"USBUBBLE_API_KEY", L"");
 }
 
 std::wstring getEnvVar(const wchar_t* envVarName, const wchar_t* defaultValue) {
@@ -65,9 +60,11 @@ void addKeyToRequestBody(std::map<std::wstring, std::wstring>*& input) {
 		input = new std::map<std::wstring, std::wstring>();
 	}
 
-	if (!checkRCDOKey()) {
+	std::wstring key = getAPIKey();
+	if (key.empty()) {
 		return;
 	}
+
 	(*input)[L"key"] = key;
 }
 

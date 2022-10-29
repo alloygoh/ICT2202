@@ -185,6 +185,11 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 }
 
 INT wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nShowCmd) {
+	// Check for API key
+	if (getAPIKey().empty()) {
+		MessageBoxW(NULL, L"WARNING: API Key not set. Please set the USBUBBLE_API_KEY environment variable", L"Warning", MB_OK);
+	}
+
 	// Enrollment mode
 	if (wcscmp(lpCmdLine, L"enroll") == 0) {
 		enrollment = true;
