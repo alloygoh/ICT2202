@@ -81,8 +81,7 @@ LRESULT CALLBACK Wndproc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 		DEV_BROADCAST_DEVICEINTERFACE_A* deviceInterface = (DEV_BROADCAST_DEVICEINTERFACE_A*)device;
 		char* deviceName = deviceInterface->dbcc_name;
 		std::string deviceID = getDeviceID(deviceName);
-		MyOutputDebugStringW(L"Temp: %S\n", deviceName);
-		MyOutputDebugStringW(L"ID: %S\n", deviceID);
+		MyOutputDebugStringW(L"ID: %S\n", deviceID.data());
 
 		// already hooked, can safely return
 		if (knownDevices.find(deviceID) != knownDevices.end()) {
