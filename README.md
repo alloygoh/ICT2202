@@ -3,6 +3,8 @@
 ## C2 Server
 A telegram bot for user to receive notifications on security breaches on their devices.
 
+Before reading this section, please change directory to `c2_server`
+
 ### Setting up telegram bot
 
 https://core.telegram.org/bots#6-botfather
@@ -43,6 +45,8 @@ python app.py
 ```
 
 ## Machine learning model
+Before reading this section, please change directory to `ml_model`
+
 (Optional) Set up virtual environment
 
 ```powershell
