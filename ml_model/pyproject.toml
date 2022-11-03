@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "2202_df_ml"
+version = "0.1.0"
+description = ""
+authors = [""]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0.85.1"
+uvicorn = {extras = ["standard"], version = "^0.19.0"}
+scikit-learn = "^1.1.2"
+gensim = "^4.2.0"
+pandas = "^1.5.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
