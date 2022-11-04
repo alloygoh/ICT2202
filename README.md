@@ -3,7 +3,7 @@
 ## C2 Server
 A telegram bot for user to receive notifications on security breaches on their devices.
 
-Before reading this section, please change directory to `c2_server`
+Before reading this section, please change directory to `notification-bot`
 
 ### Setting up telegram bot
 
@@ -15,7 +15,7 @@ Make a copy of [`env.example`](env.example), naming it `.env`. Fill in `BOT_TOKE
 
 ### Populating user data
 
-Populate user data in [`c2_server/data/users.csv`](data/users.csv) file. **Remember to put a trailing comma after `can_kill` field.**
+Populate user data in [`notification-bot/data/users.csv`](notification-bot/data/users.csv) file. **Remember to put a trailing comma after `can_kill` field.**
 
 - `username`: Telegram username (only required during intial authentication)
 - `key`: Any string, just make sure to tally with the `USBUBBLE_API_KEY` variable set in the C program.
