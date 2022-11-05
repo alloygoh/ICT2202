@@ -11,7 +11,7 @@ https://core.telegram.org/bots#6-botfather
 
 ### Configuring .env
 
-Make a copy of [`env.example`](env.example), naming it `.env`. Fill in `BOT_TOKEN` with the api key obtained from botfather.
+Make a copy of [`notification-bot/env.example`](notification-bot/env.example), naming it `.env`. Fill in `BOT_TOKEN` with the api key obtained from botfather.
 
 ### Populating user data
 
@@ -26,7 +26,7 @@ Populate user data in [`notification-bot/data/users.csv`](notification-bot/data/
 
 (Optional) Set up virtual environment
 
-```powershell
+```bash
 python -m venv .venv
 .\.venv\Scripts\activate
 deactivate #to deactivate
@@ -34,13 +34,13 @@ deactivate #to deactivate
 
 Install dependencies
 
-```powershell
+```bash
 python -m pip install -r requirements.txt
 ```
 
 ### Usage
 
-```
+```bash
 python app.py
 ```
 
@@ -68,7 +68,7 @@ Put the files in the `ml_model` folder
 
 ### Usage
 
-```
+```powershell
 uvicorn main:app
 ```
 
